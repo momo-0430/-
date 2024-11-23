@@ -50,8 +50,6 @@
       padding: 20px;
       border-radius: 10px;
       display: none;
-      opacity: 0;
-      animation: fadeIn 1s forwards;
     }
     #gameOver button {
       margin-top: 10px;
@@ -64,14 +62,6 @@
     }
     #gameOver button:hover {
       background-color: #45a049;
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
     }
   </style>
 </head>
@@ -91,9 +81,6 @@
   </div>
 
   <canvas id="gameCanvas" width="300" height="300"></canvas>
-
-  <audio id="gameOverSound" src="game-over-sound.mp3"></audio>
-  <audio id="eatFoodSound" src="eat-food-sound.mp3"></audio>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -166,7 +153,6 @@
         if (head.x === f.x && head.y === f.y) {
           food.splice(idx, 1); 
           ateFood = true;
-          document.getElementById('eatFoodSound').play(); // 播放吃到食物的音效
         }
       });
 
@@ -282,7 +268,6 @@
       }
 
       gameOverScreen.style.display = 'block';
-      document.getElementById('gameOverSound').play(); // 播放遊戲結束音效
       isGameOver = true;
     }
 
