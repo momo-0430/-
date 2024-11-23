@@ -76,6 +76,7 @@
 
   <div id="gameOver">
     <p>遊戲結束！</p>
+    <p id="endMessage"></p>
     <button onclick="startGame()">重新開始</button>
   </div>
 
@@ -93,6 +94,7 @@
     const speed = 200;
     let playerName = '';
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    let isGameOver = false;
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -172,7 +174,7 @@
       });
 
       // 繪製食物
-      ctx.fillStyle = 'green'; // 食物顏色設定為綠色
+      ctx.fillStyle = 'red'; // 食物顏色設定為紅色
       food.forEach(f => {
         ctx.fillRect(f.x, f.y, box, box);
       });
@@ -180,6 +182,7 @@
 
     // 游戏循环
     function gameLoop(timestamp) {
+      if (isGameOver) return; // 遊戲結束後停止繪製
       if (timestamp - lastTime >= speed) {
         update();
         draw();
@@ -200,7 +203,7 @@
     });
 
     canvas.addEventListener('touchmove', (e) => {
-      if (!playerName) return; // 死後無法滑動
+      if (isGameOver) return; // 遊戲結束後不允許控制
       const touch = e.touches[0];
       touchMove.x = touch.clientX;
       touchMove.y = touch.clientY;
@@ -237,6 +240,7 @@
       direction = 'RIGHT';
       food = [];
       generateFood();
+      isGameOver = false; // 重新開始時設為遊戲未結束
       requestAnimationFrame(gameLoop);
     }
 
@@ -251,7 +255,14 @@
 
       // 顯示遊戲結束畫面
       const gameOverScreen = document.getElementById('gameOver');
+      const endMessage = document.getElementById('endMessage');
+      if (score < 5) {
+        endMessage.innerHTML = '菜就多練';
+      } else {
+        endMessage.innerHTML = '遊戲結束！';
+      }
       gameOverScreen.style.display = 'block';
+      isGameOver = true;
     }
 
     updateLeaderboard(); // 顯示排行榜
