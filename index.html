@@ -85,7 +85,7 @@
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const box = 20;
+    const box = 20; // 方塊的尺寸
     let snake;
     let direction;
     let food = [];
@@ -96,9 +96,6 @@
     const foodColors = ['#FF0000', '#FFA500', '#FFFF00'];
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
-
-    // 手勢範圍擴大設定
-    const swipeThreshold = 30; // 增加手勢判定範圍 (原來是50，現在改小為30)
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -141,7 +138,7 @@
       if (direction === 'UP') head.y -= box;
       if (direction === 'DOWN') head.y += box;
 
-      // 碰撞檢測：蛇是否碰到邊界
+      // 碰撞檢測
       if (
         head.x < 0 || head.x >= canvas.width ||
         head.y < 0 || head.y >= canvas.height ||
@@ -172,16 +169,20 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 繪製蛇
+      // 繪製蛇的每一節為圓形
       snake.forEach((segment, index) => {
         ctx.fillStyle = getGradientColor(index, snake.length);
-        ctx.fillRect(segment.x, segment.y, box, box);
+        ctx.beginPath();
+        ctx.arc(segment.x + box / 2, segment.y + box / 2, box / 2, 0, Math.PI * 2); // 畫圓形
+        ctx.fill();
       });
 
       // 繪製食物
       food.forEach(f => {
         ctx.fillStyle = f.color; // 使用食物的固定顏色
-        ctx.fillRect(f.x, f.y, box, box);
+        ctx.beginPath();
+        ctx.arc(f.x + box / 2, f.y + box / 2, box / 2, 0, Math.PI * 2); // 畫圓形
+        ctx.fill();
       });
     }
 
@@ -199,6 +200,7 @@
     // 手指滑動控制
     let touchStart = { x: 0, y: 0 };
     let touchMove = { x: 0, y: 0 };
+    let swipeThreshold = 50;
 
     canvas.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
@@ -231,43 +233,40 @@
       touchMove.y = 0;
     });
 
-    // 初始化遊戲
+    // 開始遊戲
     function startGame() {
+      const gameOverScreen = document.getElementById('gameOver');
+      gameOverScreen.style.display = 'none';
+
       playerName = document.getElementById('playerName').value || '玩家';
-      snake = [{ x: 100, y: 100 }];
+      leaderboard.push({ name: playerName, score: 0 });
+      leaderboard = leaderboard.slice(-5);  // 保留前5名
+
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+
+      snake = [{ x: 60, y: 60 }];
       direction = 'RIGHT';
       food = [];
-      generateFood();
       isGameOver = false;
-      document.getElementById('nameForm').style.display = 'none';
-      document.getElementById('gameOver').style.display = 'none';
+      generateFood();
+
+      updateLeaderboard();
       requestAnimationFrame(gameLoop);
     }
 
-    // 遊戲結束並重置
+    // 結束遊戲
     function endGame() {
-      const score = snake.length - 1;
-      leaderboard.push({ name: playerName, score: score });
-      leaderboard.sort((a, b) => b.score - a.score);
-      leaderboard = leaderboard.slice(0, 5);
+      isGameOver = true;
+      const gameOverScreen = document.getElementById('gameOver');
+      gameOverScreen.style.display = 'block';
+      document.getElementById('endMessage').textContent = `得分: ${snake.length - 1}`;
+      
+      leaderboard.push({ name: playerName, score: snake.length - 1 });
+      leaderboard = leaderboard.sort((a, b) => b.score - a.score).slice(0, 5);  // 排名
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
-
-      const gameOverScreen = document.getElementById('gameOver');
-      const endMessage = document.getElementById('endMessage');
-      if (score <= 10 && score >= 5) {
-        endMessage.innerHTML = '有點東西';
-      } else if (score > 10) {
-        endMessage.innerHTML = '你是我的神';
-      } else {
-        endMessage.innerHTML = '菜就多練';
-      }
-
-      gameOverScreen.style.display = 'block';
-      isGameOver = true;
     }
 
-    updateLeaderboard(); // 顯示排行榜
   </script>
 </body>
 </html>
