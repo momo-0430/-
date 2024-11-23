@@ -97,8 +97,8 @@
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
 
-    // 擴大碰撞範圍的大小
-    const collisionBuffer = 5; // 增加的碰撞範圍（可以調整）
+    // 手勢範圍擴大設定
+    const swipeThreshold = 30; // 增加手勢判定範圍 (原來是50，現在改小為30)
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -140,25 +140,6 @@
       if (direction === 'RIGHT') head.x += box;
       if (direction === 'UP') head.y -= box;
       if (direction === 'DOWN') head.y += box;
-
-      // 擴大碰撞範圍的判定
-      if (
-        head.x < 0 || head.x >= canvas.width ||
-        head.y < 0 || head.y >= canvas.height ||
-        snake.some((segment, index) => {
-          if (index === 0) return false; // 排除頭部自己
-          // 在每一節蛇身周圍擴大範圍進行判斷
-          return (
-            head.x >= segment.x - collisionBuffer &&
-            head.x <= segment.x + box + collisionBuffer &&
-            head.y >= segment.y - collisionBuffer &&
-            head.y <= segment.y + box + collisionBuffer
-          );
-        })
-      ) {
-        endGame();
-        return;
-      }
 
       let ateFood = false;
       food.forEach((f, idx) => {
@@ -208,7 +189,6 @@
     // 手指滑動控制
     let touchStart = { x: 0, y: 0 };
     let touchMove = { x: 0, y: 0 };
-    let swipeThreshold = 50;
 
     canvas.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
