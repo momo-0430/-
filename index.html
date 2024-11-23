@@ -16,40 +16,12 @@
     canvas {
       border: 2px solid #000;
       background-color: #fff;
-    }
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      position: fixed;
-      bottom: 20px;
-      width: 80%;
-      max-width: 400px;
-    }
-    .button {
-      flex: 1;
-      margin: 0 10px;
-      background-color: #4caf50;
-      color: white;
-      text-align: center;
-      padding: 10px;
-      font-size: 18px;
-      border: none;
-      border-radius: 5px;
-      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    }
-    .button:active {
-      background-color: #3e8e41;
+      touch-action: none; /* 禁止瀏覽器的默認手勢行為 */
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="300" height="300"></canvas>
-  <div class="controls">
-    <button class="button" id="up">↑</button>
-    <button class="button" id="left">←</button>
-    <button class="button" id="right">→</button>
-    <button class="button" id="down">↓</button>
-  </div>
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -61,29 +33,32 @@
       y: Math.floor(Math.random() * (canvas.height / box)) * box,
     };
 
+    // 手勢變量
+    let startX = 0, startY = 0, endX = 0, endY = 0;
+
     function draw() {
-      // Clear canvas
+      // 清空畫布
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw snake
+      // 畫蛇
       snake.forEach((segment, index) => {
         ctx.fillStyle = index === 0 ? '#000' : '#4caf50';
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
-      // Draw food
+      // 畫食物
       ctx.fillStyle = 'red';
       ctx.fillRect(food.x, food.y, box, box);
 
-      // Move snake
+      // 蛇移動
       let head = { ...snake[0] };
       if (direction === 'LEFT') head.x -= box;
       if (direction === 'RIGHT') head.x += box;
       if (direction === 'UP') head.y -= box;
       if (direction === 'DOWN') head.y += box;
 
-      // Check for collisions
+      // 碰撞檢測
       if (
         head.x < 0 ||
         head.x >= canvas.width ||
@@ -91,7 +66,7 @@
         head.y >= canvas.height ||
         snake.some(segment => segment.x === head.x && segment.y === head.y)
       ) {
-        alert('Game Over!');
+        alert('遊戲結束！');
         snake = [{ x: 3 * box, y: 3 * box }];
         direction = 'RIGHT';
         food = {
@@ -101,7 +76,7 @@
         return;
       }
 
-      // Check if snake eats food
+      // 吃食物
       if (head.x === food.x && head.y === food.y) {
         food = {
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
@@ -114,18 +89,35 @@
       snake.unshift(head);
     }
 
-    // Handle controls
-    document.getElementById('up').addEventListener('click', () => {
-      if (direction !== 'DOWN') direction = 'UP';
+    // 處理滑動手勢
+    canvas.addEventListener('touchstart', e => {
+      const touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
     });
-    document.getElementById('down').addEventListener('click', () => {
-      if (direction !== 'UP') direction = 'DOWN';
-    });
-    document.getElementById('left').addEventListener('click', () => {
-      if (direction !== 'RIGHT') direction = 'LEFT';
-    });
-    document.getElementById('right').addEventListener('click', () => {
-      if (direction !== 'LEFT') direction = 'RIGHT';
+
+    canvas.addEventListener('touchend', e => {
+      const touch = e.changedTouches[0];
+      endX = touch.clientX;
+      endY = touch.clientY;
+
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      // 判斷滑動方向
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 0 && direction !== 'LEFT') {
+          direction = 'RIGHT';
+        } else if (deltaX < 0 && direction !== 'RIGHT') {
+          direction = 'LEFT';
+        }
+      } else {
+        if (deltaY > 0 && direction !== 'UP') {
+          direction = 'DOWN';
+        } else if (deltaY < 0 && direction !== 'DOWN') {
+          direction = 'UP';
+        }
+      }
     });
 
     setInterval(draw, 100);
