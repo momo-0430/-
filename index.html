@@ -206,14 +206,17 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // 遊戲結束
+    // 遊戲結束並重置
     function endGame() {
-      alert('遊戲結束！');
       const score = snake.length - 1;
       leaderboard.push({ name: playerName, score: score });
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
+      alert('遊戲結束！');
+
+      // 重置遊戲
       document.getElementById('nameForm').style.display = 'block';
+      document.getElementById('playerName').value = '';
     }
 
     updateLeaderboard(); // 顯示排行榜
