@@ -85,7 +85,7 @@
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const box = 20; // 方塊的尺寸
+    const box = 20;
     let snake;
     let direction;
     let food = [];
@@ -96,6 +96,9 @@
     const foodColors = ['#FF0000', '#FFA500', '#FFFF00'];
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
+
+    // 擴大碰撞範圍的大小
+    const collisionBuffer = 10; // 增加的碰撞範圍（可以調整）
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -138,11 +141,19 @@
       if (direction === 'UP') head.y -= box;
       if (direction === 'DOWN') head.y += box;
 
-      // 碰撞檢測
+      // 擴大碰撞範圍的判定
       if (
-        head.x < 0 || head.x >= canvas.width ||
-        head.y < 0 || head.y >= canvas.height ||
-        snake.some(segment => segment.x === head.x && segment.y === head.y)
+        head.x < -collisionBuffer || head.x >= canvas.width + collisionBuffer ||
+        head.y < -collisionBuffer || head.y >= canvas.height + collisionBuffer ||
+        snake.some(segment => {
+          // 在每一節蛇身周圍擴大範圍進行判斷
+          return (
+            head.x >= segment.x - collisionBuffer &&
+            head.x <= segment.x + box + collisionBuffer &&
+            head.y >= segment.y - collisionBuffer &&
+            head.y <= segment.y + box + collisionBuffer
+          );
+        })
       ) {
         endGame();
         return;
@@ -169,20 +180,16 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 繪製蛇的每一節為圓形
+      // 繪製蛇
       snake.forEach((segment, index) => {
         ctx.fillStyle = getGradientColor(index, snake.length);
-        ctx.beginPath();
-        ctx.arc(segment.x + box / 2, segment.y + box / 2, box / 2, 0, Math.PI * 2); // 畫圓形
-        ctx.fill();
+        ctx.fillRect(segment.x, segment.y, box, box);
       });
 
       // 繪製食物
       food.forEach(f => {
         ctx.fillStyle = f.color; // 使用食物的固定顏色
-        ctx.beginPath();
-        ctx.arc(f.x + box / 2, f.y + box / 2, box / 2, 0, Math.PI * 2); // 畫圓形
-        ctx.fill();
+        ctx.fillRect(f.x, f.y, box, box);
       });
     }
 
@@ -238,35 +245,34 @@
       const gameOverScreen = document.getElementById('gameOver');
       gameOverScreen.style.display = 'none';
 
-      playerName = document.getElementById('playerName').value || '玩家';
-      leaderboard.push({ name: playerName, score: 0 });
-      leaderboard = leaderboard.slice(-5);  // 保留前5名
+      playerName = document.getElementById('playerName').value.trim();
+      if (!playerName) return alert("請輸入名字");
 
-      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-
-      snake = [{ x: 60, y: 60 }];
+      document.getElementById('nameForm').style.display = 'none';
+      snake = [{ x: 100, y: 100 }];
       direction = 'RIGHT';
       food = [];
-      isGameOver = false;
       generateFood();
-
-      updateLeaderboard();
+      isGameOver = false;
       requestAnimationFrame(gameLoop);
     }
 
     // 結束遊戲
     function endGame() {
       isGameOver = true;
-      const gameOverScreen = document.getElementById('gameOver');
-      gameOverScreen.style.display = 'block';
-      document.getElementById('endMessage').textContent = `得分: ${snake.length - 1}`;
-      
+      document.getElementById('gameOver').style.display = 'block';
+      document.getElementById('endMessage').innerText = `分數: ${snake.length - 1}`;
       leaderboard.push({ name: playerName, score: snake.length - 1 });
-      leaderboard = leaderboard.sort((a, b) => b.score - a.score).slice(0, 5);  // 排名
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5); // 限制顯示前 5 名
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
     }
 
+    // 初始化
+    window.onload = function() {
+      updateLeaderboard();
+    };
   </script>
 </body>
 </html>
