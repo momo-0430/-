@@ -12,11 +12,14 @@
       align-items: center;
       height: 100vh;
       background-color: #f0f0f0;
+      flex-direction: column;
     }
     canvas {
       border: 2px solid #000;
       background-color: #fff;
+      margin-bottom: 10px;
     }
+    /* 搖桿外圓 */
     .joystick {
       position: fixed;
       bottom: 30px;
@@ -26,25 +29,44 @@
       background-color: rgba(0, 0, 0, 0.2);
       border-radius: 50%;
       touch-action: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
+    /* 搖桿內圓 */
     .joystick-handle {
       position: absolute;
       width: 50px;
       height: 50px;
       background-color: rgba(0, 0, 0, 0.6);
       border-radius: 50%;
-      top: 25px;
-      left: 25px;
-      transform: translate(0, 0);
       transition: transform 0.1s;
+    }
+    /* 顯示圖示的圓形控制 */
+    .joystick-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .joystick-icon::after {
+      content: '🎮';
+      font-size: 30px;
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="300" height="300"></canvas>
-  <div class="joystick" id="joystick">
-    <div class="joystick-handle" id="joystickHandle"></div>
+  <!-- 搖桿控制圖示 -->
+  <div class="joystick">
+    <div class="joystick-icon">
+      <div class="joystick-handle" id="joystickHandle"></div>
+    </div>
   </div>
+
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
