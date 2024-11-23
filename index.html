@@ -63,42 +63,11 @@
     #gameOver button:hover {
       background-color: #45a049;
     }
-    #effectText {
-      position: absolute;
-      top: 10px;
-      width: 100%;
-      text-align: center;
-      font-size: 18px;
-      color: #333;
-      z-index: 10;
-    }
-    #abilityStatus {
-      position: absolute;
-      top: 100px;
-      right: 20px;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .ability {
-      padding: 10px;
-      margin: 5px;
-      background-color: rgba(255, 255, 255, 0.7);
-      border-radius: 5px;
-      width: 150px;
-    }
   </style>
 </head>
 <body>
 
   <div id="leaderboard"></div>
-  <div id="effectText"></div>
-  <div id="abilityStatus">
-    <div class="ability" id="growAbility">變大: 0s</div>
-    <div class="ability" id="shineAbility">金光: 0s</div>
-    <div class="ability" id="speedAbility">加速: 0s</div>
-  </div>
 
   <div id="nameForm">
     <input type="text" id="playerName" placeholder="輸入你的名字" />
@@ -125,9 +94,6 @@
     let playerName = '';
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
-    let effectTimeout = null;
-    let effectType = '';
-    let effectDurations = { grow: 0, shine: 0, speed: 0 };  // 儲存特殊能力的剩餘時間
     let speed = 200;
     let normalSnakeLength = 1;  // 保存蛇的正常長度
 
@@ -147,8 +113,7 @@
         newFood = {
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
           y: Math.floor(Math.random() * (canvas.height / box)) * box,
-          color: ['#FF0000', '#FFFF00', '#0000FF'][Math.floor(Math.random() * 3)], // 隨機顏色
-          type: ['grow', 'shine', 'speed'][Math.floor(Math.random() * 3)] // 隨機特殊能力
+          color: ['#FF0000', '#FFFF00', '#0000FF'][Math.floor(Math.random() * 3)] // 隨機顏色
         };
         if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
             !food.some(f => f.x === newFood.x && f.y === newFood.y)) {
@@ -160,43 +125,6 @@
     // 蛇身顏色還原為預設顏色
     function getSnakeColor() {
       return 'rgb(0, 255, 0)'; // 綠色
-    }
-
-    // 顯示特殊能力
-    function updateAbilityStatus() {
-      document.getElementById('growAbility').textContent = `變大: ${effectDurations.grow}s`;
-      document.getElementById('shineAbility').textContent = `金光: ${effectDurations.shine}s`;
-      document.getElementById('speedAbility').textContent = `加速: ${effectDurations.speed}s`;
-    }
-
-    // 顯示金光閃閃的特效
-    function showShineEffect() {
-      const effectText = document.getElementById('effectText');
-      effectText.innerHTML = '<span style="color: gold; font-size: 24px;">金光閃閃！</span>';
-
-      setTimeout(() => {
-        effectText.innerHTML = '';
-      }, 2000);
-    }
-
-    // 處理食物的特殊能力
-    function handleFoodEffect(type) {
-      if (type === 'grow') {
-        const newLength = Math.floor(snake.length * 1.5);
-        for (let i = snake.length; i < newLength; i++) {
-          snake.push({ x: snake[i-1].x, y: snake[i-1].y });
-        }
-        effectDurations.grow = 2;
-      } else if (type === 'shine') {
-        showShineEffect();
-        effectDurations.shine = 2;
-      } else if (type === 'speed') {
-        speed = Math.max(50, speed / 1.5);
-        effectDurations.speed = 2;
-        setTimeout(() => {
-          speed = Math.min(200, speed * 1.5);
-        }, 2000);
-      }
     }
 
     // 遊戲邏輯
@@ -222,7 +150,6 @@
         if (head.x === f.x && head.y === f.y) {
           food.splice(idx, 1); 
           ateFood = true;
-          handleFoodEffect(f.type); // 處理食物的特殊效果
         }
       });
 
@@ -233,10 +160,6 @@
         snake.unshift(head);
         snake.pop();
       }
-
-      if (effectDurations.grow > 0) effectDurations.grow -= 0.1;
-      if (effectDurations.shine > 0) effectDurations.shine -= 0.1;
-      if (effectDurations.speed > 0) effectDurations.speed -= 0.1;
     }
 
     // 畫面更新
@@ -254,8 +177,6 @@
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, box, box);
       });
-
-      updateAbilityStatus();
     }
 
     // 控制方向
@@ -276,7 +197,6 @@
       food = [];
       generateFood();
       isGameOver = false;
-      effectDurations = { grow: 0, shine: 0, speed: 0 };
       speed = 200;
       normalSnakeLength = 1;
 
@@ -307,11 +227,6 @@
 
       update();
       draw();
-      if (effectDurations.grow > 0) effectDurations.grow -= 0.1;
-      if (effectDurations.shine > 0) effectDurations.shine -= 0.1;
-      if (effectDurations.speed > 0) effectDurations.speed -= 0.1;
-
-      updateAbilityStatus();
       setTimeout(gameLoop, speed);
     }
   </script>
