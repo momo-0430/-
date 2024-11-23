@@ -80,7 +80,7 @@
     <button onclick="startGame()">重新開始</button>
   </div>
 
-  <canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas" width="300" height="300"></canvas>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -96,11 +96,6 @@
     const foodColors = ['#FF0000', '#FFA500', '#FFFF00'];
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
-
-    // 調整畫布大小適配視窗
-    const canvasSize = Math.min(window.innerWidth, window.innerHeight) * 0.8;
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
 
     // 顯示排行榜
     function updateLeaderboard() {
