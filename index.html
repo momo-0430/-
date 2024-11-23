@@ -243,15 +243,5 @@
     function endGame() {
       const score = snake.length - 1;
       leaderboard.push({ name: playerName, score: score });
-      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-      updateLeaderboard();
-
-      // 顯示遊戲結束畫面
-      const gameOverScreen = document.getElementById('gameOver');
-      gameOverScreen.style.display = 'block';
-    }
-
-    updateLeaderboard(); // 顯示排行榜
-  </script>
-</body>
-</html>
+      leaderboard.sort((a, b) => b.score - a.score); // 排序排行榜
+      if (leaderboard.length
