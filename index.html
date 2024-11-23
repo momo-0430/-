@@ -80,7 +80,7 @@
     <button onclick="startGame()">重新開始</button>
   </div>
 
-  <canvas id="gameCanvas" width="300" height="300"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -93,14 +93,20 @@
     let lastTime = 0;
     const speed = 200;
     let playerName = '';
+    const foodColors = ['#FF0000', '#FFA500', '#FFFF00'];
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
+
+    // 調整畫布大小適配視窗
+    const canvasSize = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
 
     // 顯示排行榜
     function updateLeaderboard() {
       const leaderboardElement = document.getElementById('leaderboard');
       leaderboardElement.innerHTML = '<h3>排行榜</h3>';
-      leaderboard.sort((a, b) => b.score - a.score).slice(0, 5).forEach((entry, index) => {
+      leaderboard.forEach((entry, index) => {
         leaderboardElement.innerHTML += `${index + 1}. ${entry.name} - ${entry.score} 分<br>`;
       });
     }
@@ -174,8 +180,8 @@
       });
 
       // 繪製食物
-      ctx.fillStyle = 'red'; // 食物顏色設定為紅色
-      food.forEach(f => {
+      food.forEach((f, idx) => {
+        ctx.fillStyle = foodColors[idx % foodColors.length];
         ctx.fillRect(f.x, f.y, box, box);
       });
     }
@@ -248,24 +254,20 @@
     function endGame() {
       const score = snake.length - 1;
       leaderboard.push({ name: playerName, score: score });
-      leaderboard.sort((a, b) => b.score - a.score); // 排序排行榜
-      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); // 只保留前5名
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5); // 限制排行榜最多顯示5名
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
 
-      // 顯示遊戲結束畫面
-      const gameOverScreen = document.getElementById('gameOver');
       const endMessage = document.getElementById('endMessage');
-      if (score < 5) {
-        endMessage.innerHTML = '菜就多練';
-      } else {
-        endMessage.innerHTML = '遊戲結束！';
-      }
-      gameOverScreen.style.display = 'block';
+      endMessage.textContent = score < 5 ? '菜就多練！' : `得分：${score}`;
+      document.getElementById('gameOver').style.display = 'block';
       isGameOver = true;
     }
 
-    updateLeaderboard(); // 顯示排行榜
+    // 初始化排行榜
+    updateLeaderboard();
   </script>
+
 </body>
 </html>
