@@ -80,14 +80,15 @@
       font-size: 18px;
       color: #333;
       z-index: 10;
+      display: flex;
+      flex-direction: column; /* 改為縱列排列 */
     }
     .ability {
-      display: inline-block;
-      width: 30%;
       padding: 10px;
-      margin: 0 5px;
+      margin: 5px;
       background-color: rgba(255, 255, 255, 0.7);
       border-radius: 5px;
+      width: 100px;
     }
   </style>
 </head>
@@ -230,22 +231,24 @@
       if (ateFood) {
         generateFood();
       } else {
-        snake.pop(); // 去除蛇尾
+        snake.pop(); 
       }
 
-      snake.unshift(head); // 增加新的蛇頭
+      snake.unshift(head);
+    }
 
-      // 渲染畫面
+    // 繪圖邏輯
+    function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 渲染蛇
-      snake.forEach(segment => {
+      // 繪製蛇
+      snake.forEach((segment) => {
         ctx.fillStyle = getSnakeColor();
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
-      // 渲染食物
-      food.forEach(f => {
+      // 繪製食物
+      food.forEach((f) => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, box, box);
       });
@@ -253,62 +256,63 @@
       updateAbilityStatus();
     }
 
-    function gameLoop() {
-      const now = Date.now();
-      const deltaTime = now - lastTime;
-      if (deltaTime > speed) {
-        update();
-        lastTime = now;
-      }
-      requestAnimationFrame(gameLoop);
-    }
+    // 控制方向
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+      if (event.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+      if (event.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+      if (event.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+    });
 
     // 開始遊戲
     function startGame() {
-      const gameOverScreen = document.getElementById('gameOver');
-      gameOverScreen.style.display = 'none';
+      playerName = document.getElementById('playerName').value;
+      if (!playerName) return alert("請輸入你的名字！");
 
-      playerName = document.getElementById('playerName').value.trim();
-      if (!playerName) return alert("請輸入名字");
-
-      document.getElementById('nameForm').style.display = 'none';
-      snake = [{ x: 3 * box, y: 3 * box }];
+      snake = [{ x: 100, y: 100 }];
       direction = 'RIGHT';
       food = [];
       generateFood();
       isGameOver = false;
-      speed = 200;
       effectDurations = { grow: 0, shine: 0, speed: 0 };
-      showEffectMessage('');
-      requestAnimationFrame(gameLoop);
+      speed = 200;
+      normalSnakeLength = 1;
+
+      document.getElementById('gameOver').style.display = 'none';
+      document.getElementById('nameForm').style.display = 'none';
+      gameLoop();
     }
 
-    // 遊戲結束並重置
+    // 結束遊戲
     function endGame() {
-      const score = snake.length - 1;
-      leaderboard.push({ name: playerName, score: score });
-      leaderboard.sort((a, b) => b.score - a.score); 
-      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); 
-      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-      updateLeaderboard();
+      if (!isGameOver) {
+        const score = snake.length - normalSnakeLength;
+        leaderboard.push({ name: playerName, score });
+        leaderboard.sort((a, b) => b.score - a.score);
+        if (leaderboard.length > 5) leaderboard.pop();
+        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+        isGameOver = true;
 
-      // 顯示遊戲結束畫面
-      const gameOverScreen = document.getElementById('gameOver');
-      const endMessage = document.getElementById('endMessage');
-      
-      if (score <= 10 && score >= 5) {
-        endMessage.innerHTML = '有點東西';
-      } else if (score > 10) {
-        endMessage.innerHTML = '你是我的神';
-      } else {
-        endMessage.innerHTML = '菜就多練';
+        document.getElementById('endMessage').textContent = `你的得分: ${score} 分`;
+        document.getElementById('gameOver').style.display = 'block';
+        updateLeaderboard();
       }
-
-      gameOverScreen.style.display = 'block';
-      isGameOver = true;
     }
 
-    updateLeaderboard(); // 顯示排行榜
+    // 遊戲循環
+    function gameLoop(timestamp) {
+      if (isGameOver) return;
+
+      update();
+      draw();
+      if (effectDurations.grow > 0) effectDurations.grow -= 0.1;
+      if (effectDurations.shine > 0) effectDurations.shine -= 0.1;
+      if (effectDurations.speed > 0) effectDurations.speed -= 0.1;
+
+      updateAbilityStatus();
+
+      setTimeout(() => gameLoop(timestamp), speed);
+    }
   </script>
 </body>
 </html>
