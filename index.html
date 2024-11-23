@@ -113,6 +113,7 @@
         newFood = {
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
           y: Math.floor(Math.random() * (canvas.height / box)) * box,
+          color: foodColors[Math.floor(Math.random() * foodColors.length)] // 隨機選擇顏色
         };
         if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
             !food.some(f => f.x === newFood.x && f.y === newFood.y)) {
@@ -175,8 +176,8 @@
       });
 
       // 繪製食物
-      food.forEach((f, idx) => {
-        ctx.fillStyle = foodColors[idx % foodColors.length];
+      food.forEach(f => {
+        ctx.fillStyle = f.color; // 使用食物的固定顏色
         ctx.fillRect(f.x, f.y, box, box);
       });
     }
@@ -249,20 +250,28 @@
     function endGame() {
       const score = snake.length - 1;
       leaderboard.push({ name: playerName, score: score });
-      leaderboard.sort((a, b) => b.score - a.score);
-      leaderboard = leaderboard.slice(0, 5); // 限制排行榜最多顯示5名
+      leaderboard.sort((a, b) => b.score - a.score); // 排序排行榜
+      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); // 只保留前5名
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
 
+      // 顯示遊戲結束畫面
+      const gameOverScreen = document.getElementById('gameOver');
       const endMessage = document.getElementById('endMessage');
-      endMessage.textContent = score < 5 ? '菜就多練！' : `得分：${score}`;
-      document.getElementById('gameOver').style.display = 'block';
+      
+      if (score <= 10 && score >= 5) {
+        endMessage.innerHTML = '有點東西';
+      } else if (score > 10) {
+        endMessage.innerHTML = '你是我的神';
+      } else {
+        endMessage.innerHTML = '菜就多練';
+      }
+
+      gameOverScreen.style.display = 'block';
       isGameOver = true;
     }
 
-    // 初始化排行榜
-    updateLeaderboard();
+    updateLeaderboard(); // 顯示排行榜
   </script>
-
 </body>
 </html>
