@@ -128,14 +128,16 @@
 
     // 繪圖邏輯
     function draw() {
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 清除畫布
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // 繪製蛇
       snake.forEach((segment, index) => {
         ctx.fillStyle = index === 0 ? '#000' : '#4caf50';
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
+      // 繪製食物
       ctx.fillStyle = 'red';
       ctx.fillRect(food.x, food.y, box, box);
     }
