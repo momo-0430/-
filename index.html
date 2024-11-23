@@ -50,6 +50,8 @@
       padding: 20px;
       border-radius: 10px;
       display: none;
+      opacity: 0;
+      animation: fadeIn 1s forwards;
     }
     #gameOver button {
       margin-top: 10px;
@@ -63,12 +65,20 @@
     #gameOver button:hover {
       background-color: #45a049;
     }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div id="leaderboard"></div>
-
+  
   <div id="nameForm">
     <input type="text" id="playerName" placeholder="輸入你的名字" />
     <button onclick="startGame()">開始遊戲</button>
@@ -82,6 +92,9 @@
 
   <canvas id="gameCanvas" width="300" height="300"></canvas>
 
+  <audio id="gameOverSound" src="game-over-sound.mp3"></audio>
+  <audio id="eatFoodSound" src="eat-food-sound.mp3"></audio>
+
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -91,11 +104,11 @@
     let food = [];
     const numFood = 3;
     let lastTime = 0;
+    const speed = 200;
     let playerName = '';
+    const foodColors = ['#FF0000', '#FFA500', '#FFFF00'];
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let isGameOver = false;
-    let speed = 200;
-    let normalSnakeLength = 1;  // 保存蛇的正常長度
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -113,7 +126,7 @@
         newFood = {
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
           y: Math.floor(Math.random() * (canvas.height / box)) * box,
-          color: ['#FF0000', '#FFFF00', '#0000FF'][Math.floor(Math.random() * 3)] // 隨機顏色
+          color: foodColors[Math.floor(Math.random() * foodColors.length)] // 隨機選擇顏色
         };
         if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
             !food.some(f => f.x === newFood.x && f.y === newFood.y)) {
@@ -122,9 +135,12 @@
       }
     }
 
-    // 蛇身顏色還原為預設顏色
-    function getSnakeColor() {
-      return 'rgb(0, 255, 0)'; // 綠色
+    // 蛇身顏色漸變
+    function getGradientColor(index, totalLength) {
+      const ratio = index / totalLength;
+      const green = Math.floor(255 * ratio);
+      const blue = Math.floor(255 * (1 - ratio));
+      return `rgb(0, ${green}, ${blue})`;
     }
 
     // 遊戲邏輯
@@ -150,85 +166,127 @@
         if (head.x === f.x && head.y === f.y) {
           food.splice(idx, 1); 
           ateFood = true;
+          document.getElementById('eatFoodSound').play(); // 播放吃到食物的音效
         }
       });
 
       if (ateFood) {
-        snake.unshift(head);
         generateFood();
       } else {
-        snake.unshift(head);
-        snake.pop();
+        snake.pop(); 
       }
+
+      snake.unshift(head);
     }
 
-    // 畫面更新
+    // 繪圖邏輯
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 畫蛇
-      snake.forEach(segment => {
-        ctx.fillStyle = getSnakeColor();
+      // 繪製蛇
+      snake.forEach((segment, index) => {
+        ctx.fillStyle = getGradientColor(index, snake.length);
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
-      // 畫食物
+      // 繪製食物
       food.forEach(f => {
-        ctx.fillStyle = f.color;
+        ctx.fillStyle = f.color; // 使用食物的固定顏色
         ctx.fillRect(f.x, f.y, box, box);
       });
     }
 
-    // 控制方向
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
-      if (event.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
-      if (event.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
-      if (event.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+    // 游戏循环
+    function gameLoop(timestamp) {
+      if (isGameOver) return; // 遊戲結束後停止繪製
+      if (timestamp - lastTime >= speed) {
+        update();
+        draw();
+        lastTime = timestamp;
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    // 手指滑動控制
+    let touchStart = { x: 0, y: 0 };
+    let touchMove = { x: 0, y: 0 };
+    let swipeThreshold = 50;
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      touchStart.x = touch.clientX;
+      touchStart.y = touch.clientY;
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (isGameOver) return; // 遊戲結束後不允許控制
+      const touch = e.touches[0];
+      touchMove.x = touch.clientX;
+      touchMove.y = touch.clientY;
+
+      const deltaX = touchMove.x - touchStart.x;
+      const deltaY = touchMove.y - touchStart.y;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+        if (deltaX > 0 && direction !== 'LEFT') direction = 'RIGHT';
+        if (deltaX < 0 && direction !== 'RIGHT') direction = 'LEFT';
+      } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > swipeThreshold) {
+        if (deltaY > 0 && direction !== 'UP') direction = 'DOWN';
+        if (deltaY < 0 && direction !== 'DOWN') direction = 'UP';
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      touchStart.x = 0;
+      touchStart.y = 0;
+      touchMove.x = 0;
+      touchMove.y = 0;
     });
 
     // 開始遊戲
     function startGame() {
-      playerName = document.getElementById('playerName').value;
-      if (!playerName) return alert("請輸入你的名字！");
+      const gameOverScreen = document.getElementById('gameOver');
+      gameOverScreen.style.display = 'none';
 
-      snake = [{ x: 100, y: 100 }];
+      playerName = document.getElementById('playerName').value.trim();
+      if (!playerName) return alert("請輸入名字");
+
+      document.getElementById('nameForm').style.display = 'none';
+      snake = [{ x: 3 * box, y: 3 * box }];
       direction = 'RIGHT';
       food = [];
       generateFood();
-      isGameOver = false;
-      speed = 200;
-      normalSnakeLength = 1;
-
-      document.getElementById('gameOver').style.display = 'none';
-      document.getElementById('nameForm').style.display = 'none';
-      gameLoop();
+      isGameOver = false; // 重新開始時設為遊戲未結束
+      requestAnimationFrame(gameLoop);
     }
 
-    // 結束遊戲
+    // 遊戲結束並重置
     function endGame() {
-      if (!isGameOver) {
-        const score = snake.length - normalSnakeLength;
-        leaderboard.push({ name: playerName, score });
-        leaderboard.sort((a, b) => b.score - a.score);
-        if (leaderboard.length > 5) leaderboard.pop();
-        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-        isGameOver = true;
+      const score = snake.length - 1;
+      leaderboard.push({ name: playerName, score: score });
+      leaderboard.sort((a, b) => b.score - a.score); // 排序排行榜
+      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); // 只保留前5名
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      updateLeaderboard();
 
-        document.getElementById('endMessage').textContent = `你的得分: ${score} 分`;
-        document.getElementById('gameOver').style.display = 'block';
-        updateLeaderboard();
+      // 顯示遊戲結束畫面
+      const gameOverScreen = document.getElementById('gameOver');
+      const endMessage = document.getElementById('endMessage');
+      
+      if (score <= 10 && score >= 5) {
+        endMessage.innerHTML = '有點東西';
+      } else if (score > 10) {
+        endMessage.innerHTML = '你是我的神';
+      } else {
+        endMessage.innerHTML = '菜就多練';
       }
+
+      gameOverScreen.style.display = 'block';
+      document.getElementById('gameOverSound').play(); // 播放遊戲結束音效
+      isGameOver = true;
     }
 
-    // 遊戲循環
-    function gameLoop() {
-      if (isGameOver) return;
-
-      update();
-      draw();
-      setTimeout(gameLoop, speed);
-    }
+    updateLeaderboard(); // 顯示排行榜
   </script>
 </body>
 </html>
