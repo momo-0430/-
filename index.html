@@ -118,12 +118,12 @@
       }
     }
 
-    // 蛇身顏色漸變
+    // 蛇身顏色漸變，避免紅色
     function getGradientColor(index, totalLength) {
       const ratio = index / totalLength;
-      const red = Math.floor(255 * ratio);
-      const green = Math.floor(255 * (1 - ratio));
-      return `rgb(${red}, ${green}, 0)`;
+      const green = Math.floor(255 * ratio);
+      const blue = Math.floor(255 * (1 - ratio));
+      return `rgb(0, ${green}, ${blue})`;
     }
 
     // 遊戲邏輯
@@ -172,7 +172,7 @@
       });
 
       // 繪製食物
-      ctx.fillStyle = 'red';
+      ctx.fillStyle = 'green'; // 食物顏色設定為綠色
       food.forEach(f => {
         ctx.fillRect(f.x, f.y, box, box);
       });
@@ -200,6 +200,7 @@
     });
 
     canvas.addEventListener('touchmove', (e) => {
+      if (!playerName) return; // 死後無法滑動
       const touch = e.touches[0];
       touchMove.x = touch.clientX;
       touchMove.y = touch.clientY;
