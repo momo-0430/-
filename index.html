@@ -75,7 +75,7 @@
     #abilityStatus {
       position: absolute;
       top: 100px;
-      left: 20px;
+      right: 20px;
       z-index: 10;
       display: flex;
       flex-direction: column;
@@ -222,31 +222,35 @@
         if (head.x === f.x && head.y === f.y) {
           food.splice(idx, 1); 
           ateFood = true;
-          handleFoodEffect(f.type); // 處理食物特殊能力
+          handleFoodEffect(f.type); // 處理食物的特殊效果
         }
       });
 
       if (ateFood) {
+        snake.unshift(head);
         generateFood();
       } else {
-        snake.pop(); 
+        snake.unshift(head);
+        snake.pop();
       }
 
-      snake.unshift(head);
+      if (effectDurations.grow > 0) effectDurations.grow -= 0.1;
+      if (effectDurations.shine > 0) effectDurations.shine -= 0.1;
+      if (effectDurations.speed > 0) effectDurations.speed -= 0.1;
     }
 
-    // 繪圖邏輯
+    // 畫面更新
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 繪製蛇
-      snake.forEach((segment) => {
+      // 畫蛇
+      snake.forEach(segment => {
         ctx.fillStyle = getSnakeColor();
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
-      // 繪製食物
-      food.forEach((f) => {
+      // 畫食物
+      food.forEach(f => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, box, box);
       });
