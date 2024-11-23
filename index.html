@@ -13,28 +13,66 @@
       height: 100vh;
       background-color: #f0f0f0;
       flex-direction: column;
-      overflow: hidden; /* 防止頁面滾動 */
+      overflow: hidden;
     }
     canvas {
       border: 2px solid #000;
       background-color: #fff;
-      touch-action: none; /* 防止在畫布上滑動時產生滾動 */
+      touch-action: none;
+    }
+    #nameForm {
+      position: absolute;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #leaderboard {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 18px;
+      z-index: 5;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
+
+  <div id="leaderboard"></div>
+  
+  <div id="nameForm">
+    <input type="text" id="playerName" placeholder="輸入你的名字" />
+    <button onclick="startGame()">開始遊戲</button>
+  </div>
+
   <canvas id="gameCanvas" width="300" height="300"></canvas>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const box = 20;
-    let snake = [{ x: 3 * box, y: 3 * box }];
-    let direction = 'RIGHT';
+    let snake;
+    let direction;
     let food = [];
-    const numFood = 3; // 增加食物數量
+    const numFood = 3;
     let lastTime = 0;
     const speed = 200;
+    let playerName = '';
+    let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+    // 顯示排行榜
+    function updateLeaderboard() {
+      const leaderboardElement = document.getElementById('leaderboard');
+      leaderboardElement.innerHTML = '<h3>排行榜</h3>';
+      leaderboard.sort((a, b) => b.score - a.score).slice(0, 5).forEach((entry, index) => {
+        leaderboardElement.innerHTML += `${index + 1}. ${entry.name} - ${entry.score} 分<br>`;
+      });
+    }
 
     // 生成食物且避開蛇身
     function generateFood() {
@@ -44,7 +82,6 @@
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
           y: Math.floor(Math.random() * (canvas.height / box)) * box,
         };
-        // 確保食物不會生成在蛇的身上
         if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
             !food.some(f => f.x === newFood.x && f.y === newFood.y)) {
           food.push(newFood);
@@ -52,14 +89,12 @@
       }
     }
 
-    // 隨機顏色生成函數
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
+    // 蛇身顏色漸變
+    function getGradientColor(index, totalLength) {
+      const ratio = index / totalLength;
+      const red = Math.floor(255 * ratio);
+      const green = Math.floor(255 * (1 - ratio));
+      return `rgb(${red}, ${green}, 0)`;
     }
 
     // 遊戲邏輯
@@ -76,27 +111,22 @@
         head.y < 0 || head.y >= canvas.height ||
         snake.some(segment => segment.x === head.x && segment.y === head.y)
       ) {
-        alert('遊戲結束！');
-        snake = [{ x: 3 * box, y: 3 * box }];
-        direction = 'RIGHT';
-        food = [];
-        generateFood();
+        endGame();
         return;
       }
 
-      // 吃食物
       let ateFood = false;
       food.forEach((f, idx) => {
         if (head.x === f.x && head.y === f.y) {
-          food.splice(idx, 1); // 刪除已吃掉的食物
+          food.splice(idx, 1); 
           ateFood = true;
         }
       });
 
       if (ateFood) {
-        generateFood(); // 生成新的食物
+        generateFood();
       } else {
-        snake.pop(); // 沒有吃到食物，蛇身不長
+        snake.pop(); 
       }
 
       snake.unshift(head);
@@ -104,12 +134,11 @@
 
     // 繪圖邏輯
     function draw() {
-      // 清除畫布
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // 繪製蛇
       snake.forEach((segment, index) => {
-        ctx.fillStyle = getRandomColor(); // 隨機顏色
+        ctx.fillStyle = getGradientColor(index, snake.length);
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
@@ -165,9 +194,29 @@
       touchMove.y = 0;
     });
 
-    // 启动游戏
-    generateFood(); // 初始化食物
-    requestAnimationFrame(gameLoop);
+    // 開始遊戲
+    function startGame() {
+      playerName = document.getElementById('playerName').value.trim();
+      if (!playerName) return alert("請輸入名字");
+      document.getElementById('nameForm').style.display = 'none';
+      snake = [{ x: 3 * box, y: 3 * box }];
+      direction = 'RIGHT';
+      food = [];
+      generateFood();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // 遊戲結束
+    function endGame() {
+      alert('遊戲結束！');
+      const score = snake.length - 1;
+      leaderboard.push({ name: playerName, score: score });
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      updateLeaderboard();
+      document.getElementById('nameForm').style.display = 'block';
+    }
+
+    updateLeaderboard(); // 顯示排行榜
   </script>
 </body>
 </html>
