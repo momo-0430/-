@@ -13,11 +13,12 @@
       height: 100vh;
       background-color: #f0f0f0;
       flex-direction: column;
+      overflow: hidden; /* 防止頁面滾動 */
     }
     canvas {
       border: 2px solid #000;
       background-color: #fff;
-      margin-bottom: 10px;
+      touch-action: none; /* 防止在畫布上滑動時產生滾動 */
     }
   </style>
 </head>
@@ -49,6 +50,16 @@
           food.push(newFood);
         }
       }
+    }
+
+    // 隨機顏色生成函數
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
     }
 
     // 遊戲邏輯
@@ -98,9 +109,7 @@
 
       // 繪製蛇
       snake.forEach((segment, index) => {
-        const colorIndex = Math.min(index, 5); // 限制顏色變化的長度
-        const colors = ['#4caf50', '#66bb6a', '#81c784', '#8bc34a', '#a5d6a7']; // 蛇身顏色過渡
-        ctx.fillStyle = colors[colorIndex] || '#4caf50';
+        ctx.fillStyle = getRandomColor(); // 隨機顏色
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
