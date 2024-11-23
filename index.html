@@ -239,10 +239,6 @@
       gameOverScreen.style.display = 'none';
 
       playerName = document.getElementById('playerName').value || '玩家';
-      leaderboard.push({ name: playerName, score: 0 });
-      leaderboard = leaderboard.slice(-5);  // 保留前5名
-
-      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
 
       snake = [{ x: 60, y: 60 }];
       direction = 'RIGHT';
