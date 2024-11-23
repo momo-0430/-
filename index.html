@@ -259,9 +259,21 @@
       isGameOver = true;
       const gameOverScreen = document.getElementById('gameOver');
       gameOverScreen.style.display = 'block';
-      document.getElementById('endMessage').textContent = `得分: ${snake.length - 1}`;
-      
-      leaderboard.push({ name: playerName, score: snake.length - 1 });
+      const score = snake.length - 1;
+
+      // 根據得分顯示不同的評價
+      let endMessage = `得分: ${score}`;
+      if (score < 5) {
+        endMessage += "<br>菜就多練";
+      } else if (score >= 5 && score <= 10) {
+        endMessage += "<br>有點東西";
+      } else {
+        endMessage += "<br>你是我的神";
+      }
+
+      document.getElementById('endMessage').innerHTML = endMessage;
+
+      leaderboard.push({ name: playerName, score: score });
       leaderboard = leaderboard.sort((a, b) => b.score - a.score).slice(0, 5);  // 排名
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
