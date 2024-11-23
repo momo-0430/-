@@ -141,6 +141,16 @@
       if (direction === 'UP') head.y -= box;
       if (direction === 'DOWN') head.y += box;
 
+      // 碰撞檢測：蛇是否碰到邊界
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.some(segment => segment.x === head.x && segment.y === head.y)
+      ) {
+        endGame();
+        return;
+      }
+
       let ateFood = false;
       food.forEach((f, idx) => {
         if (head.x === f.x && head.y === f.y) {
@@ -229,27 +239,35 @@
       food = [];
       generateFood();
       isGameOver = false;
-      document.getElementById('gameOver').style.display = 'none';
       document.getElementById('nameForm').style.display = 'none';
+      document.getElementById('gameOver').style.display = 'none';
       requestAnimationFrame(gameLoop);
     }
 
-    // 結束遊戲
+    // 遊戲結束並重置
     function endGame() {
-      isGameOver = true;
-      document.getElementById('gameOver').style.display = 'block';
-      document.getElementById('endMessage').innerText = `分數: ${snake.length - 1}`;
-      leaderboard.push({ name: playerName, score: snake.length - 1 });
+      const score = snake.length - 1;
+      leaderboard.push({ name: playerName, score: score });
       leaderboard.sort((a, b) => b.score - a.score);
-      leaderboard = leaderboard.slice(0, 5); // 限制顯示前 5 名
+      leaderboard = leaderboard.slice(0, 5);
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
+
+      const gameOverScreen = document.getElementById('gameOver');
+      const endMessage = document.getElementById('endMessage');
+      if (score <= 10 && score >= 5) {
+        endMessage.innerHTML = '有點東西';
+      } else if (score > 10) {
+        endMessage.innerHTML = '你是我的神';
+      } else {
+        endMessage.innerHTML = '菜就多練';
+      }
+
+      gameOverScreen.style.display = 'block';
+      isGameOver = true;
     }
 
-    // 初始化
-    window.onload = function() {
-      updateLeaderboard();
-    };
+    updateLeaderboard(); // 顯示排行榜
   </script>
 </body>
 </html>
