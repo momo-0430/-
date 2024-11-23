@@ -19,53 +19,10 @@
       background-color: #fff;
       margin-bottom: 10px;
     }
-    /* 搖桿外圓 */
-    .joystick {
-      position: fixed;
-      bottom: 30px;
-      left: 30px;
-      width: 100px;
-      height: 100px;
-      background-color: rgba(0, 0, 0, 0.2);
-      border-radius: 50%;
-      touch-action: none;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    /* 搖桿內圓 */
-    .joystick-handle {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background-color: rgba(0, 0, 0, 0.6);
-      border-radius: 50%;
-      transition: transform 0.1s;
-    }
-    /* 顯示圖示的圓形控制 */
-    .joystick-icon {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background-color: rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .joystick-icon::after {
-      content: '🎮';
-      font-size: 30px;
-    }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="300" height="300"></canvas>
-  <!-- 搖桿控制圖示 -->
-  <div class="joystick">
-    <div class="joystick-icon">
-      <div class="joystick-handle" id="joystickHandle"></div>
-    </div>
-  </div>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -73,26 +30,25 @@
     const box = 20;
     let snake = [{ x: 3 * box, y: 3 * box }];
     let direction = 'RIGHT';
-    let food = generateFood();
+    let food = [];
+    const numFood = 3; // 增加食物數量
     let lastTime = 0;
     const speed = 200;
 
-    // 摇桿相关变量
-    const joystick = document.getElementById('joystick');
-    const joystickHandle = document.getElementById('joystickHandle');
-    let joystickCenter = { x: joystick.offsetWidth / 2, y: joystick.offsetHeight / 2 };
-    let active = false;
-
-    // 生成食物且避开蛇身
+    // 生成食物且避開蛇身
     function generateFood() {
       let newFood;
-      do {
+      while (food.length < numFood) {
         newFood = {
           x: Math.floor(Math.random() * (canvas.width / box)) * box,
           y: Math.floor(Math.random() * (canvas.height / box)) * box,
         };
-      } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
-      return newFood;
+        // 確保食物不會生成在蛇的身上
+        if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
+            !food.some(f => f.x === newFood.x && f.y === newFood.y)) {
+          food.push(newFood);
+        }
+      }
     }
 
     // 遊戲邏輯
@@ -112,15 +68,24 @@
         alert('遊戲結束！');
         snake = [{ x: 3 * box, y: 3 * box }];
         direction = 'RIGHT';
-        food = generateFood();
+        food = [];
+        generateFood();
         return;
       }
 
       // 吃食物
-      if (head.x === food.x && head.y === food.y) {
-        food = generateFood();
+      let ateFood = false;
+      food.forEach((f, idx) => {
+        if (head.x === f.x && head.y === f.y) {
+          food.splice(idx, 1); // 刪除已吃掉的食物
+          ateFood = true;
+        }
+      });
+
+      if (ateFood) {
+        generateFood(); // 生成新的食物
       } else {
-        snake.pop();
+        snake.pop(); // 沒有吃到食物，蛇身不長
       }
 
       snake.unshift(head);
@@ -133,13 +98,17 @@
 
       // 繪製蛇
       snake.forEach((segment, index) => {
-        ctx.fillStyle = index === 0 ? '#000' : '#4caf50';
+        const colorIndex = Math.min(index, 5); // 限制顏色變化的長度
+        const colors = ['#4caf50', '#66bb6a', '#81c784', '#8bc34a', '#a5d6a7']; // 蛇身顏色過渡
+        ctx.fillStyle = colors[colorIndex] || '#4caf50';
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
       // 繪製食物
       ctx.fillStyle = 'red';
-      ctx.fillRect(food.x, food.y, box, box);
+      food.forEach(f => {
+        ctx.fillRect(f.x, f.y, box, box);
+      });
     }
 
     // 游戏循环
@@ -152,46 +121,16 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // 摇桿邏輯
-    joystick.addEventListener('touchstart', e => {
-      active = true;
-    });
-
-    joystick.addEventListener('touchmove', e => {
-      if (!active) return;
-
-      const touch = e.touches[0];
-      const rect = joystick.getBoundingClientRect();
-      const offsetX = touch.clientX - rect.left - joystickCenter.x;
-      const offsetY = touch.clientY - rect.top - joystickCenter.y;
-
-      const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2);
-      const maxDistance = joystick.offsetWidth / 2;
-
-      // 限制摇桿手柄的移动范围
-      const normalizedX = offsetX / distance;
-      const normalizedY = offsetY / distance;
-      const clampedX = normalizedX * Math.min(distance, maxDistance);
-      const clampedY = normalizedY * Math.min(distance, maxDistance);
-
-      joystickHandle.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
-
-      // 根據方向改變移動
-      if (Math.abs(offsetX) > Math.abs(offsetY)) {
-        if (offsetX > 0 && direction !== 'LEFT') direction = 'RIGHT';
-        if (offsetX < 0 && direction !== 'RIGHT') direction = 'LEFT';
-      } else {
-        if (offsetY > 0 && direction !== 'UP') direction = 'DOWN';
-        if (offsetY < 0 && direction !== 'DOWN') direction = 'UP';
-      }
-    });
-
-    joystick.addEventListener('touchend', () => {
-      active = false;
-      joystickHandle.style.transform = `translate(0, 0)`;
+    // 監聽鍵盤控制
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+      if (e.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+      if (e.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+      if (e.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
     });
 
     // 启动游戏
+    generateFood(); // 初始化食物
     requestAnimationFrame(gameLoop);
   </script>
 </body>
