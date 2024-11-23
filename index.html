@@ -72,12 +72,34 @@
       color: #333;
       z-index: 10;
     }
+    #abilityStatus {
+      position: absolute;
+      top: 40px;
+      width: 100%;
+      text-align: center;
+      font-size: 18px;
+      color: #333;
+      z-index: 10;
+    }
+    .ability {
+      display: inline-block;
+      width: 30%;
+      padding: 10px;
+      margin: 0 5px;
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
 
   <div id="leaderboard"></div>
   <div id="effectText"></div>
+  <div id="abilityStatus">
+    <div class="ability" id="growAbility">變大: 0s</div>
+    <div class="ability" id="shineAbility">金光: 0s</div>
+    <div class="ability" id="speedAbility">加速: 0s</div>
+  </div>
 
   <div id="nameForm">
     <input type="text" id="playerName" placeholder="輸入你的名字" />
@@ -106,7 +128,9 @@
     let isGameOver = false;
     let effectTimeout = null;
     let effectType = '';
+    let effectDurations = { grow: 0, shine: 0, speed: 0 };  // 儲存特殊能力的剩餘時間
     let speed = 200;
+    let normalSnakeLength = 1;  // 保存蛇的正常長度
 
     // 顯示排行榜
     function updateLeaderboard() {
@@ -134,24 +158,46 @@
       }
     }
 
-    // 蛇身顏色漸變
-    function getGradientColor(index, totalLength) {
-      const ratio = index / totalLength;
-      const green = Math.floor(255 * ratio);
-      const blue = Math.floor(255 * (1 - ratio));
-      return `rgb(0, ${green}, ${blue})`;
+    // 蛇身顏色還原為預設顏色
+    function getSnakeColor() {
+      return 'rgb(0, 255, 0)'; // 綠色
     }
 
     // 顯示特殊能力
-    function showEffectMessage(message) {
+    function updateAbilityStatus() {
+      document.getElementById('growAbility').textContent = `變大: ${effectDurations.grow}s`;
+      document.getElementById('shineAbility').textContent = `金光: ${effectDurations.shine}s`;
+      document.getElementById('speedAbility').textContent = `加速: ${effectDurations.speed}s`;
+    }
+
+    // 顯示金光閃閃的特效
+    function showShineEffect() {
       const effectText = document.getElementById('effectText');
-      effectText.innerText = message;
+      effectText.innerHTML = '<span style="color: gold; font-size: 24px;">金光閃閃！</span>';
 
-      if (effectTimeout) clearTimeout(effectTimeout);
+      setTimeout(() => {
+        effectText.innerHTML = '';
+      }, 2000);
+    }
 
-      effectTimeout = setTimeout(() => {
-        effectText.innerText = '';
-      }, 5000);
+    // 處理食物的特殊能力
+    function handleFoodEffect(type) {
+      if (type === 'grow') {
+        const newLength = Math.floor(snake.length * 1.5);
+        for (let i = snake.length; i < newLength; i++) {
+          snake.push({ x: snake[i-1].x, y: snake[i-1].y });
+        }
+        effectDurations.grow = 2;
+      } else if (type === 'shine') {
+        showShineEffect();
+        effectDurations.shine = 2;
+      } else if (type === 'speed') {
+        speed = Math.max(50, speed / 1.5);
+        effectDurations.speed = 2;
+        setTimeout(() => {
+          speed = Math.min(200, speed * 1.5);
+        }, 2000);
+      }
     }
 
     // 遊戲邏輯
@@ -184,92 +230,38 @@
       if (ateFood) {
         generateFood();
       } else {
-        snake.pop(); 
+        snake.pop(); // 去除蛇尾
       }
 
-      snake.unshift(head);
-    }
+      snake.unshift(head); // 增加新的蛇頭
 
-    // 處理食物的特殊能力
-    function handleFoodEffect(type) {
-      if (type === 'grow') {
-        snake.push({ x: snake[snake.length - 1].x, y: snake[snake.length - 1].y }); // 增加蛇身
-        showEffectMessage('蛇變大了！');
-      } else if (type === 'shine') {
-        showEffectMessage('金光閃閃！');
-        // 金光閃閃效果可視化（在此只顯示提示）
-      } else if (type === 'speed') {
-        speed = Math.max(50, speed / 2); // 速度加倍，但不低於50ms
-        showEffectMessage('速度加倍！');
-        setTimeout(() => {
-          speed = Math.min(200, speed * 2); // 5秒後恢復正常速度
-        }, 5000);
-      }
-    }
-
-    // 繪圖邏輯
-    function draw() {
+      // 渲染畫面
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 繪製蛇
-      snake.forEach((segment, index) => {
-        ctx.fillStyle = getGradientColor(index, snake.length);
+      // 渲染蛇
+      snake.forEach(segment => {
+        ctx.fillStyle = getSnakeColor();
         ctx.fillRect(segment.x, segment.y, box, box);
       });
 
-      // 繪製食物
+      // 渲染食物
       food.forEach(f => {
-        ctx.fillStyle = f.color; // 使用食物的顏色
+        ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, box, box);
       });
+
+      updateAbilityStatus();
     }
 
-    // 游戏循环
-    function gameLoop(timestamp) {
-      if (isGameOver) return; // 遊戲結束後停止繪製
-      if (timestamp - lastTime >= speed) {
+    function gameLoop() {
+      const now = Date.now();
+      const deltaTime = now - lastTime;
+      if (deltaTime > speed) {
         update();
-        draw();
-        lastTime = timestamp;
+        lastTime = now;
       }
       requestAnimationFrame(gameLoop);
     }
-
-    // 手指滑動控制
-    let touchStart = { x: 0, y: 0 };
-    let touchMove = { x: 0, y: 0 };
-    let swipeThreshold = 50;
-
-    canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      touchStart.x = touch.clientX;
-      touchStart.y = touch.clientY;
-    });
-
-    canvas.addEventListener('touchmove', (e) => {
-      if (isGameOver) return; // 遊戲結束後不允許控制
-      const touch = e.touches[0];
-      touchMove.x = touch.clientX;
-      touchMove.y = touch.clientY;
-
-      const deltaX = touchMove.x - touchStart.x;
-      const deltaY = touchMove.y - touchStart.y;
-
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
-        if (deltaX > 0 && direction !== 'LEFT') direction = 'RIGHT';
-        if (deltaX < 0 && direction !== 'RIGHT') direction = 'LEFT';
-      } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > swipeThreshold) {
-        if (deltaY > 0 && direction !== 'UP') direction = 'DOWN';
-        if (deltaY < 0 && direction !== 'DOWN') direction = 'UP';
-      }
-    });
-
-    canvas.addEventListener('touchend', () => {
-      touchStart.x = 0;
-      touchStart.y = 0;
-      touchMove.x = 0;
-      touchMove.y = 0;
-    });
 
     // 開始遊戲
     function startGame() {
@@ -285,7 +277,8 @@
       food = [];
       generateFood();
       isGameOver = false;
-      speed = 200; // 重置速度
+      speed = 200;
+      effectDurations = { grow: 0, shine: 0, speed: 0 };
       showEffectMessage('');
       requestAnimationFrame(gameLoop);
     }
@@ -294,8 +287,8 @@
     function endGame() {
       const score = snake.length - 1;
       leaderboard.push({ name: playerName, score: score });
-      leaderboard.sort((a, b) => b.score - a.score); // 排序排行榜
-      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); // 只保留前5名
+      leaderboard.sort((a, b) => b.score - a.score); 
+      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5); 
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       updateLeaderboard();
 
